@@ -2,9 +2,14 @@
 
 <JUCERPROJECT id="wOCmYX" name="BitAlchemy" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginFormats="buildVST3"
-              pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn"
+              pluginCharacteristicsValue="pluginEditorRequiresKeys,pluginIsSynth,pluginWantsMidiIn"
               pluginName="BitAlchemy" pluginDesc="BitAlchemy" pluginVST3Category="Instrument">
   <MAINGROUP id="pcW5Bf" name="BitAlchemy">
+    <GROUP id="{89D1DFCC-4825-08B4-3CC5-177DE91F7AAB}" name="Include">
+      <FILE id="OD5905" name="FormulaParser.cpp" compile="1" resource="0"
+            file="Include/FormulaParser.cpp"/>
+      <FILE id="BvdIBI" name="FormulaParser.h" compile="0" resource="0" file="Include/FormulaParser.h"/>
+    </GROUP>
     <GROUP id="{68B1B459-8E04-4723-3A37-FE8397227707}" name="Source">
       <FILE id="eH5PH2" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
@@ -34,10 +39,10 @@
   </MODULES>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>
   <EXPORTFORMATS>
-    <VS2022 targetFolder="Builds/VisualStudio2022">
+    <VS2022 targetFolder="Builds/VisualStudio2022" extraCompilerFlags="/Zc:__cplusplus">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="BitAlchemy"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="BitAlchemy"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="BitAlchemy" headerPath="E:\Cpp Libs\xtensor\include&#10;E:\Cpp Libs\xtl\include&#10;E:\Cpp Libs\peglib"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="BitAlchemy" headerPath="E:\Cpp Libs\xtensor\include&#10;E:\Cpp Libs\xtl\include&#10;E:\Cpp Libs\peglib&#10;E:\Cpp Projects\BitAlchemy\Include"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../../Cpp Libs/juce/modules"/>

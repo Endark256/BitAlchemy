@@ -1,37 +1,6 @@
-/*
-  ==============================================================================
-
-    This file contains the basic framework code for a JUCE plugin processor.
-
-  ==============================================================================
-*/
-
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include <cmath>
-
-int32_t  shiftRight(int32_t  value, int32_t  count) {
-    if (value < 0) {
-        return (value >> count) | ((~0) << (32 - count)); // 填充符号位
-    }
-    else {
-        return value >> count; // 正数直接右移
-    }
-}
-
-int32_t shiftLeft(int32_t value, int32_t count) {
-    return value << (count % 16);
-}
-
-int32_t div32(int32_t a, int32_t b) {
-    if (b == 0) return 0;
-    return a / b;
-}
-
-int32_t mod32(int32_t a, int32_t b) {
-    if (b == 0) return 0;
-    return a % b;
-}
 
 //==============================================================================
 _8BitSynthAudioProcessor::_8BitSynthAudioProcessor()
@@ -50,6 +19,9 @@ _8BitSynthAudioProcessor::_8BitSynthAudioProcessor()
 
 _8BitSynthAudioProcessor::~_8BitSynthAudioProcessor()
 {
+    formula = "";
+    parsed = false;
+    expr = nullptr;
 }
 
 //==============================================================================
@@ -119,8 +91,6 @@ void _8BitSynthAudioProcessor::prepareToPlay (double currentSampleRate, int curr
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    sampleRate = currentSampleRate;
-    samplesPerBlock = currentSamplesPerBlock;
 }
 
 void _8BitSynthAudioProcessor::releaseResources()
@@ -157,6 +127,7 @@ bool _8BitSynthAudioProcessor::isBusesLayoutSupported (const BusesLayout& layout
 
 void _8BitSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    /*
     auto numChannels = buffer.getNumChannels(); // block通道数
     auto numSamples = buffer.getNumSamples(); // block大小
 
@@ -195,9 +166,9 @@ void _8BitSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
                 {
                     double frequency = 440.0 * std::pow(2.0, (note - 69) / 12.0);
                     int32_t t = (static_cast<int32_t>(std::floor((noteTimes[note] + sample) * frequency * 256.0 / sampleRate)));
-                    //sampleValue = sampleValue + ( ((((t / 2) * (t >> 8)) | ((t % 10) / (t >> t))) | ((t >> 16) >> t)) | (t / 4) ) % 256;
+                    
                     sampleValue = sampleValue + ( 
-                        (((div32(t, 2) * shiftRight(t, 8)) | div32(mod32(t, 10), shiftRight(t, t))) | shiftRight(t, t)) | (t / 4) 
+                        shiftRight(t, 6) | (shiftRight((t & 174) * (shiftRight(t, 7) & 209), 1) ^ (t & 14))
                         ) % 256;
                 }
             }
@@ -218,6 +189,7 @@ void _8BitSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             noteTimes[i] = 0;
         }
     }
+    */
 }
 
 //==============================================================================
@@ -250,4 +222,38 @@ void _8BitSynthAudioProcessor::setStateInformation (const void* data, int sizeIn
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new _8BitSynthAudioProcessor();
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout _8BitSynthAudioProcessor::createParameterLayout() {
+
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+    layout.add(std::make_unique<juce::AudioParameterInt>("w", "w", 0, 255, 0));
+    layout.add(std::make_unique<juce::AudioParameterInt>("x", "x", 0, 255, 0));
+    layout.add(std::make_unique<juce::AudioParameterInt>("y", "y", 0, 255, 0));
+    layout.add(std::make_unique<juce::AudioParameterInt>("z", "z", 0, 255, 0));
+    
+    return layout;
+};
+
+std::string _8BitSynthAudioProcessor::getFormula() {
+    return formula;
+};
+
+void _8BitSynthAudioProcessor::setFormula(std::string& formula_string) {
+    formula = formula_string;
+    parsed = false;           // 当前 formula 未被 parse
+};
+
+fparse::ParseResult _8BitSynthAudioProcessor::parse() {
+    fparse::ParseResult result = parser.parse(formula);
+    if (result.success) {           // 如果执行成功，则当前 formula 已被 parse，储存 parse 的结果
+        parsed = true;
+        expr = result.expr;
+    }
+    return result;
+}
+
+bool _8BitSynthAudioProcessor::isFormulaParsed() {
+    return parsed;
 }

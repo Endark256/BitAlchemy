@@ -1,18 +1,9 @@
-/*
-  ==============================================================================
-
-    This file contains the basic framework code for a JUCE plugin processor.
-
-  ==============================================================================
-*/
-
 #pragma once
 
 #include <JuceHeader.h>
+#include "FormulaParser.h"
 
 //==============================================================================
-/**
-*/
 class _8BitSynthAudioProcessor  : public juce::AudioProcessor
 {
 public:
@@ -53,12 +44,22 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    juce::AudioProcessorValueTreeState apvts{ *this, nullptr, "Parameters", createParameterLayout() };
+
+    //==============================================================================
+    std::string getFormula();                       // 获取当前 formula
+    void setFormula(std::string& formula);          // 设置当前 formula
+    fparse::ParseResult parse();                    // parse 当前 formula
+    bool isFormulaParsed();                         // 返回当前 formula 是否已被 parse 过
+
 private:
     //==============================================================================
-    std::array<int32_t, 128> noteTimes; // 用于存储每个MIDI音符的时间
-    bool isNoteActive[128] = { false }; // 记录哪些音符处于激活状态
-    double sampleRate;
-    double samplesPerBlock;
+    fparse::FormulaParser parser;                   // parser
+    std::string formula;                            // formula
+    bool parsed;                                    // 当前 formula 是否已被 parse 过
+    std::shared_ptr<fparse::Expression> expr;       // 上一个有效 formula 的 parse 结果
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (_8BitSynthAudioProcessor)
 };
