@@ -25,54 +25,18 @@ public:
 
 class FormulaEditor : public juce::TextEditor {
 public:
-    FormulaEditor(_8BitSynthAudioProcessor& p) : 
-        juce::TextEditor("FormulaEditor")
-    {
-        setMultiLine(true, false);              // 多行模式，不强制断行
-        setScrollbarsShown(true);               // 显示滚动条
-        setTabKeyUsedAsCharacter(true);         // 允许键入Tab
-        setReturnKeyStartsNewLine(true);        // 允许换行
+    FormulaEditor(FormulaManager& m);
 
-        audio_processor = &p;                   // audio processor
+    bool keyPressed(const juce::KeyPress& key);
 
-        onTextChange = [this, &p]() -> void {   // 文本内容变化
-                p.setFormula(getText().toStdString());                  // 写入 Formula
-                setColour(focusedOutlineColourId, juce::Colour(231, 228, 98));  // 修改边框为黄色
-                setColour(outlineColourId, juce::Colour(187, 183, 31));  
-                repaint();
-            };
-    };
+    inline void updateText();
 
-
-    bool keyPressed(const juce::KeyPress& key) {
-        // 按下 shift + enter 的逻辑
-        if (key == juce::KeyPress(juce::KeyPress::returnKey, juce::ModifierKeys::shiftModifier, NULL)) {
-    
-            auto result = audio_processor->parse();
-    
-            if (result.success) {
-                // parse 成功时的逻辑
-                setColour(focusedOutlineColourId, juce::Colour(98, 228, 117)); // 修改边框为绿色
-                setColour(outlineColourId, juce::Colour(31, 183, 53));
-            }
-            else {
-                // parse 失败时的逻辑
-                setColour(focusedOutlineColourId, juce::Colour(228, 98, 98));  // 修改边框为红色
-                setColour(outlineColourId, juce::Colour(183, 31, 31));
-                // 显示错误信息
-                // ...
-            }
-            repaint();
-            return true;
-        }
-    
-        // 按下其它按键的逻辑
-        return juce::TextEditor::keyPressed(key);
-    };
-
+    inline void setOutlineColourToGreen();
+    inline void setOutlineColourToRed();
+    inline void setOutlineColourToYellow();
 
 private:
-    _8BitSynthAudioProcessor* audio_processor;
+    FormulaManager* manager;
 };
 
 

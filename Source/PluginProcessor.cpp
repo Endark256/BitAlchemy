@@ -14,14 +14,13 @@ _8BitSynthAudioProcessor::_8BitSynthAudioProcessor()
                      #endif
                        )
 #endif
-{
+, formula_manager(parser){
+    
 }
 
 _8BitSynthAudioProcessor::~_8BitSynthAudioProcessor()
 {
-    formula = "";
-    parsed = false;
-    expr = nullptr;
+    
 }
 
 //==============================================================================
@@ -236,24 +235,38 @@ juce::AudioProcessorValueTreeState::ParameterLayout _8BitSynthAudioProcessor::cr
     return layout;
 };
 
-std::string _8BitSynthAudioProcessor::getFormula() {
+
+//==============================================================================
+
+FormulaManager::FormulaManager(fparse::FormulaParser& formula_parser) {
+    parser = &formula_parser;
+    formula = "";
+    parsed = false;
+    expr = nullptr;
+}
+
+inline std::string FormulaManager::getFormula() {
     return formula;
 };
 
-void _8BitSynthAudioProcessor::setFormula(std::string& formula_string) {
+inline void FormulaManager::setFormula(std::string& formula_string) {
     formula = formula_string;
-    parsed = false;           // 当前 formula 未被 parse
+    parsed = false;                 // 当前 formula 未被 parse
 };
 
-fparse::ParseResult _8BitSynthAudioProcessor::parse() {
-    fparse::ParseResult result = parser.parse(formula);
+inline fparse::ParseResult FormulaManager::parse() {
+    fparse::ParseResult result = parser->parse(formula);
     if (result.success) {           // 如果执行成功，则当前 formula 已被 parse，储存 parse 的结果
         parsed = true;
         expr = result.expr;
     }
     return result;
-}
+};
 
-bool _8BitSynthAudioProcessor::isFormulaParsed() {
+inline bool FormulaManager::isFormulaParsed() {
     return parsed;
+};
+
+inline std::shared_ptr<fparse::Expression> FormulaManager::getExpr() {
+    return expr;
 }

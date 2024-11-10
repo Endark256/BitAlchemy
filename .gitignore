@@ -8,6 +8,8 @@
 *.obj
 /Builds/*
 /Builds/
+/Tutorial/*
+/Tutorial/
 
 # Precompiled Headers
 *.gch
