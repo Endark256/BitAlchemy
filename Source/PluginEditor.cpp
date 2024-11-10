@@ -83,6 +83,9 @@ inline void FormulaEditor::setOutlineColourToYellow() {
     setColour(outlineColourId, juce::Colour(187, 183, 31));
 }
 
+inline void FormulaEditor::attachToNewFormulaManager(FormulaManager& m) {
+    manager = &m;
+}
 
 //==============================================================================
 _8BitSynthAudioProcessorEditor::_8BitSynthAudioProcessorEditor(_8BitSynthAudioProcessor& p)
@@ -157,4 +160,3 @@ std::vector<RotarySlider*> _8BitSynthAudioProcessorEditor::getRotarySliders() {
         &z_slider
     };
 }
-

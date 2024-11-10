@@ -27,11 +27,13 @@ class FormulaEditor : public juce::TextEditor {
 public:
     FormulaEditor(FormulaManager& m);
 
-    bool keyPressed(const juce::KeyPress& key);
+    bool keyPressed(const juce::KeyPress& key);                 // 处理按键事件
 
-    inline void updateText();
+    inline void updateText();                                   // 从 Formula Manager 获取文本并更新
 
-    inline void setOutlineColourToGreen();
+    inline void attachToNewFormulaManager(FormulaManager& m);   // 绑定到新的 FormulaManager 上
+
+    inline void setOutlineColourToGreen();                      // 设置边框颜色
     inline void setOutlineColourToRed();
     inline void setOutlineColourToYellow();
 

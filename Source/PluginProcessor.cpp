@@ -14,13 +14,18 @@ _8BitSynthAudioProcessor::_8BitSynthAudioProcessor()
                      #endif
                        )
 #endif
-, formula_manager(parser){
-    
+, formula_manager(parser) {
+        
+    std::shared_ptr<fparse::Expression>& expr = formula_manager.getExpr();
+    for (auto i = 0; i < 4; ++i)
+        synth.addVoice(new _8BitSynthVoice(expr));
+
+    synth.addSound(new _8BitSynthSound());
 }
 
 _8BitSynthAudioProcessor::~_8BitSynthAudioProcessor()
 {
-    
+
 }
 
 //==============================================================================
@@ -88,8 +93,7 @@ void _8BitSynthAudioProcessor::changeProgramName (int index, const juce::String&
 //==============================================================================
 void _8BitSynthAudioProcessor::prepareToPlay (double currentSampleRate, int currentSamplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    synth.setCurrentPlaybackSampleRate(currentSampleRate);
 }
 
 void _8BitSynthAudioProcessor::releaseResources()
@@ -126,69 +130,9 @@ bool _8BitSynthAudioProcessor::isBusesLayoutSupported (const BusesLayout& layout
 
 void _8BitSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    /*
-    auto numChannels = buffer.getNumChannels(); // block通道数
-    auto numSamples = buffer.getNumSamples(); // block大小
-
-    // 清空缓冲区
     buffer.clear();
 
-    for (const auto metadata : midiMessages)
-    {
-        const auto message = metadata.getMessage();
-
-        if (message.isNoteOn())
-        {
-            int noteNumber = message.getNoteNumber();
-            isNoteActive[noteNumber] = true; // 记录音符激活状态
-        }
-        else if (message.isNoteOff())
-        {
-            int noteNumber = message.getNoteNumber();
-            isNoteActive[noteNumber] = false; // 重置音符激活状态
-            noteTimes[noteNumber] = 0; // 音符结束，时间重置
-        }
-    }
-
-    // 填充缓冲区
-    for (auto channel = 0; channel < numChannels; ++channel)
-    {
-        auto* writePointer = buffer.getWritePointer(channel);
-        for (int32_t sample = 0; sample < numSamples; ++sample)
-        {
-            int32_t sampleValue = 0;
-
-            // 计算所有激活音符的输出
-            for (int note = 0; note < 128; ++note)
-            {
-                if (isNoteActive[note])
-                {
-                    double frequency = 440.0 * std::pow(2.0, (note - 69) / 12.0);
-                    int32_t t = (static_cast<int32_t>(std::floor((noteTimes[note] + sample) * frequency * 256.0 / sampleRate)));
-                    
-                    sampleValue = sampleValue + ( 
-                        shiftRight(t, 6) | (shiftRight((t & 174) * (shiftRight(t, 7) & 209), 1) ^ (t & 14))
-                        ) % 256;
-                }
-            }
-
-            writePointer[sample] = sampleValue / (255.0f * 2.0f); // 写入缓冲区
-        }
-    }
-
-
-    // 更新音符时间
-    for (int i = 0; i < 128; ++i)
-    {
-        if (isNoteActive[i])
-        {
-            noteTimes[i] += numSamples; // 为每个激活音符增加时间
-        }
-        else {
-            noteTimes[i] = 0;
-        }
-    }
-    */
+    synth.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
 }
 
 //==============================================================================
@@ -234,39 +178,3 @@ juce::AudioProcessorValueTreeState::ParameterLayout _8BitSynthAudioProcessor::cr
     
     return layout;
 };
-
-
-//==============================================================================
-
-FormulaManager::FormulaManager(fparse::FormulaParser& formula_parser) {
-    parser = &formula_parser;
-    formula = "";
-    parsed = false;
-    expr = nullptr;
-}
-
-inline std::string FormulaManager::getFormula() {
-    return formula;
-};
-
-inline void FormulaManager::setFormula(std::string& formula_string) {
-    formula = formula_string;
-    parsed = false;                 // 当前 formula 未被 parse
-};
-
-inline fparse::ParseResult FormulaManager::parse() {
-    fparse::ParseResult result = parser->parse(formula);
-    if (result.success) {           // 如果执行成功，则当前 formula 已被 parse，储存 parse 的结果
-        parsed = true;
-        expr = result.expr;
-    }
-    return result;
-};
-
-inline bool FormulaManager::isFormulaParsed() {
-    return parsed;
-};
-
-inline std::shared_ptr<fparse::Expression> FormulaManager::getExpr() {
-    return expr;
-}
