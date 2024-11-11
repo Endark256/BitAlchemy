@@ -30,6 +30,7 @@
     <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
@@ -41,8 +42,9 @@
   <EXPORTFORMATS>
     <VS2022 targetFolder="Builds/VisualStudio2022" extraCompilerFlags="/Zc:__cplusplus">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="BitAlchemy" headerPath="E:\Cpp Libs\xtensor\include&#10;E:\Cpp Libs\xtl\include&#10;E:\Cpp Libs\peglib"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="BitAlchemy" headerPath="E:\Cpp Libs\xtensor\include&#10;E:\Cpp Libs\xtl\include&#10;E:\Cpp Libs\peglib&#10;E:\Cpp Projects\BitAlchemy\Include"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="BitAlchemy" headerPath="E:\Cpp Libs\xtensor\include&#10;E:\Cpp Libs\xtl\include&#10;E:\Cpp Libs\xsimd\include&#10;E:\Cpp Libs\peglib&#10;E:\Cpp Projects\BitAlchemy\Include"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="BitAlchemy" headerPath="E:\Cpp Libs\xtensor\include&#10;E:\Cpp Libs\xtl\include&#10;E:\Cpp Libs\xsimd\include&#10;E:\Cpp Libs\peglib&#10;E:\Cpp Projects\BitAlchemy\Include"
+                       extraCompilerFlags="-DXTENSOR_USE_XSIMD"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../../Cpp Libs/juce/modules"/>
@@ -59,6 +61,7 @@
         <MODULEPATH id="juce_gui_extra" path="../../Cpp Libs/juce/modules"/>
         <MODULEPATH id="juce_midi_ci" path="../../Cpp Libs/juce/modules"/>
         <MODULEPATH id="juce_osc" path="../../Cpp Libs/juce/modules"/>
+        <MODULEPATH id="juce_dsp" path="../../Cpp Libs/juce/modules"/>
       </MODULEPATHS>
     </VS2022>
   </EXPORTFORMATS>

@@ -15,9 +15,8 @@ _8BitSynthAudioProcessor::_8BitSynthAudioProcessor()
                        )
 #endif
 , formula_manager(parser) {
-        
     std::shared_ptr<fparse::Expression>& expr = formula_manager.getExpr();
-    for (auto i = 0; i < 4; ++i)
+    for (auto i = 0; i < 16; ++i)
         synth.addVoice(new _8BitSynthVoice(expr, apvts, bpm));
 
     synth.addSound(new _8BitSynthSound());
@@ -93,7 +92,14 @@ void _8BitSynthAudioProcessor::changeProgramName (int index, const juce::String&
 //==============================================================================
 void _8BitSynthAudioProcessor::prepareToPlay (double currentSampleRate, int currentSamplesPerBlock)
 {
-    synth.setCurrentPlaybackSampleRate(currentSampleRate);
+    uint8_t oversampling_factor = apvts.getRawParameterValue("oversampling_factor")->load();
+
+    synth.setCurrentPlaybackSampleRate(currentSampleRate * oversampling_factor);
+
+    constexpr auto filterType = juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR;
+
+    oversampler = std::make_unique<juce::dsp::Oversampling<float>>(2, oversampling_factor, filterType);
+    oversampler->initProcessing(currentSamplesPerBlock);
 }
 
 void _8BitSynthAudioProcessor::releaseResources()
@@ -135,6 +141,8 @@ void _8BitSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     // 获取播放头
     auto position = getPlayHead()->getPosition();
 
+
+    // 获取 bpm
     bpm = -1.;
 
     if (position.hasValue()) {
@@ -144,7 +152,24 @@ void _8BitSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
                 bpm = *bpm_info;
     };
 
-    synth.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
+
+    // 重新设置滤波器
+    auto currentSampleRate = getSampleRate();
+    auto currentSamplesPerBlock = buffer.getNumSamples();
+
+    uint8_t oversampling_factor = apvts.getRawParameterValue("oversampling_factor")->load();
+
+
+    // 过采样
+    juce::dsp::AudioBlock<float> block(buffer);
+    juce::dsp::AudioBlock<float> osBlock = oversampler->processSamplesUp(block);
+    float* p[] = {osBlock.getChannelPointer(0), osBlock.getChannelPointer(1)};
+    juce::AudioBuffer<float> osBuffer(p, 2, static_cast<int> (osBlock.getNumSamples()));
+    synth.setCurrentPlaybackSampleRate(currentSampleRate * oversampling_factor);
+    synth.renderNextBlock(osBuffer, midiMessages, 0, osBlock.getNumSamples());
+    oversampler->processSamplesDown(block);
+
+    osBlock.clear();
 }
 
 //==============================================================================
@@ -188,7 +213,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout _8BitSynthAudioProcessor::cr
     layout.add(std::make_unique<juce::AudioParameterInt>("y", "y", 0, 255, 0));
     layout.add(std::make_unique<juce::AudioParameterInt>("z", "z", 0, 255, 0));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>("bpm", "bpm", -1., 65535., 0.));
+    layout.add(std::make_unique<juce::AudioParameterInt>("oversampling_factor", "oversampling_factor", 1, 16, 2));
     
     return layout;
 };

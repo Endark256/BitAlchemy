@@ -76,6 +76,8 @@ public:
         vars["z"] = fparse::EvaluationResult({ 0 });
     };
 
+    
+
     bool canPlaySound(juce::SynthesiserSound* sound) override
     {
         return dynamic_cast<_8BitSynthSound*> (sound) != nullptr;
@@ -142,7 +144,7 @@ public:
         vars["z"][0] = apvts.getRawParameterValue("z")->load();
 
         // 计算输出
-        xt::xarray<float> result = xt::cast<float>((expr->evaluate(vars, numSamples) % 256 + 256) % 256) / 510.0f;
+        xt::xarray<float> result = xt::cast<float>((expr->evaluate(vars, numSamples) % 256 + 256) % 256 - 128) / 510.0f;
         
         // 将输出写入 buffer
         for (size_t i = 0; i < numSamples; i++) {
@@ -221,7 +223,10 @@ private:
     //==============================================================================
     fparse::FormulaParser parser;                       // parser
     juce::Synthesiser synth;                            // synth
-    double bpm = 0.;                                         // bpm
+    double bpm = 0.;                                    // bpm
+
+    std::unique_ptr<juce::dsp::Oversampling<float>> oversampler;
+    
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (_8BitSynthAudioProcessor)
 };
