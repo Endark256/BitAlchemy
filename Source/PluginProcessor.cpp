@@ -18,7 +18,7 @@ _8BitSynthAudioProcessor::_8BitSynthAudioProcessor()
         
     std::shared_ptr<fparse::Expression>& expr = formula_manager.getExpr();
     for (auto i = 0; i < 4; ++i)
-        synth.addVoice(new _8BitSynthVoice(expr));
+        synth.addVoice(new _8BitSynthVoice(expr, apvts, bpm));
 
     synth.addSound(new _8BitSynthSound());
 }
@@ -132,6 +132,18 @@ void _8BitSynthAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 {
     buffer.clear();
 
+    // 获取播放头
+    auto position = getPlayHead()->getPosition();
+
+    bpm = -1.;
+
+    if (position.hasValue()) {
+        auto bpm_info = position->getBpm();
+        if (bpm_info.hasValue())
+            if (*bpm_info != 0.)
+                bpm = *bpm_info;
+    };
+
     synth.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
 }
 
@@ -175,6 +187,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout _8BitSynthAudioProcessor::cr
     layout.add(std::make_unique<juce::AudioParameterInt>("x", "x", 0, 255, 0));
     layout.add(std::make_unique<juce::AudioParameterInt>("y", "y", 0, 255, 0));
     layout.add(std::make_unique<juce::AudioParameterInt>("z", "z", 0, 255, 0));
+
+    layout.add(std::make_unique<juce::AudioParameterFloat>("bpm", "bpm", -1., 65535., 0.));
     
     return layout;
 };

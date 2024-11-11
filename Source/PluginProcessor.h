@@ -52,42 +52,6 @@ public:
 };
 
 //==============================================================================
-/*
-FormulaManager::FormulaManager(fparse::FormulaParser& formula_parser) {
-    parser = &formula_parser;
-    formula = "";
-    parsed = false;
-    expr = nullptr;
-}
-
-inline std::string FormulaManager::getFormula() {
-    return formula;
-};
-
-inline void FormulaManager::setFormula(std::string& formula_string) {
-    formula = formula_string;
-    parsed = false;                 // 当前 formula 未被 parse
-};
-
-inline fparse::ParseResult FormulaManager::parse() {
-    fparse::ParseResult result = parser->parse(formula);
-    if (result.success) {           // 如果执行成功，则当前 formula 已被 parse，储存 parse 的结果
-        parsed = true;
-        expr = result.expr;
-    }
-    return result;
-};
-
-inline bool FormulaManager::isFormulaParsed() {
-    return parsed;
-};
-
-inline std::shared_ptr<fparse::Expression> FormulaManager::getExpr() {
-    return expr;
-}*/
-
-
-//==============================================================================
 // Sound 类
 class _8BitSynthSound : public juce::SynthesiserSound {
 public:
@@ -102,7 +66,8 @@ public:
 // Voice 类
 class _8BitSynthVoice : public juce::SynthesiserVoice {
 public:
-    _8BitSynthVoice(std::shared_ptr<fparse::Expression>& e) : expr(e) {
+    _8BitSynthVoice(std::shared_ptr<fparse::Expression>& e, juce::AudioProcessorValueTreeState& s, double& b) 
+        : expr(e), apvts(s), bpm(b){
         vars["T"] = fparse::EvaluationResult({ 0 });
         vars["t"] = fparse::EvaluationResult({ 0 });
         vars["w"] = fparse::EvaluationResult({ 0 });
@@ -120,6 +85,7 @@ public:
         juce::SynthesiserSound*, int /*currentPitchWheelPosition*/) override {
         frequency = juce::MidiMessage::getMidiNoteInHertz(midiNoteNumber);
         time = 0.;
+        standard_time = 0.;
     }
 
     void stopNote(float /*velocity*/, bool allowTailOff) override
@@ -135,6 +101,7 @@ public:
         clearCurrentNote();
         frequency = 0.;
         time = 0.;
+        standard_time = 0.;
     }
 
     void pitchWheelMoved(int) override {};
@@ -153,27 +120,51 @@ public:
 
         double sample_rate = getSampleRate();
 
-        double end_time = time + numSamples * 256.0 * frequency / sample_rate;
+        // 设置 t 参数
+        double end_time = time + (numSamples - 1) * 256.0 * frequency / sample_rate;
         double next_time = end_time + 256.0 * frequency / sample_rate;
-
         vars["t"] = xt::cast<int32_t>(xt::linspace<double>(time, end_time, numSamples));
+        
+        double block_bpm = bpm;
+        if (block_bpm == -1.) {
+            block_bpm = 150.;     // 默认bpm
+        }
 
+        // 设置 T 参数
+        double end_standard_time = standard_time + (numSamples - 1) * 256.0 * block_bpm / (sample_rate * 60.);
+        double next_standard_time = end_standard_time + 256.0 * block_bpm / (sample_rate * 60.);
+        vars["T"] = xt::cast<int32_t>(xt::linspace<double>(standard_time, end_standard_time, numSamples));
+
+        // 设置 w x y z 参数
+        vars["w"][0] = apvts.getRawParameterValue("w")->load();
+        vars["x"][0] = apvts.getRawParameterValue("x")->load();
+        vars["y"][0] = apvts.getRawParameterValue("y")->load();
+        vars["z"][0] = apvts.getRawParameterValue("z")->load();
+
+        // 计算输出
         xt::xarray<float> result = xt::cast<float>((expr->evaluate(vars, numSamples) % 256 + 256) % 256) / 510.0f;
         
+        // 将输出写入 buffer
         for (size_t i = 0; i < numSamples; i++) {
             for (auto channel = outputBuffer.getNumChannels(); --channel >= 0;)
                 outputBuffer.addSample(channel, startSample + i, result[i]);
         }
-
+        
+        // 更新时间
         time = next_time;
+        standard_time = next_standard_time;
 
     }
 
 private:
     double frequency = 0.;
     double time = 0.;
+    double standard_time = 0.;
+    double& bpm;
+
     std::shared_ptr<fparse::Expression>& expr;
     std::unordered_map<std::string, fparse::EvaluationResult> vars;
+    juce::AudioProcessorValueTreeState& apvts;
 };
 
 
@@ -230,6 +221,7 @@ private:
     //==============================================================================
     fparse::FormulaParser parser;                       // parser
     juce::Synthesiser synth;                            // synth
+    double bpm = 0.;                                         // bpm
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (_8BitSynthAudioProcessor)
 };
